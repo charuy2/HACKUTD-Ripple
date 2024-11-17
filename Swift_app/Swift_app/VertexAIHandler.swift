@@ -21,7 +21,7 @@ func analyzeImageWithLlama(imageBase64: String, llamaApiKey: String, object: Str
                 "content": [
                     [
                         "type": "text",
-                        "text": "Is \(object) damaged?"
+                        "text": "Give a detailed report on all damages or wear-tear observed in the image."
                     ],
                     [
                         "type": "image_url",

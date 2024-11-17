@@ -57,37 +57,41 @@ struct CurrentStatusView: View {
         // Extract frames and analyze each frame
         VideoFrameExtractor.extractFrames(from: videoURL) { frames in
             let dispatchGroup = DispatchGroup()
-
+            
             for (index, frame) in frames.enumerated() {
-                dispatchGroup.enter()
+                dispatchGroup.enter() // Ensure this is called once per iteration
                 
-                // Upload the frame to Pinata and get both the image and the URL
                 VideoFrameExtractor.uploadImageToPinata(frame) { uploadedImage, imageURL in
                     DispatchQueue.main.async {
+                        defer {
+                            // Ensure this is always called when exiting the scope
+                            print("Leaving dispatch group for frame \(index + 1)")
+                            dispatchGroup.leave()
+                        }
+                        
                         if let imageURL = imageURL {
                             // Call LlamaResponseHandler with the image URL
                             let detectedObject = "object" // Replace with actual object detection logic
                             let question = "Is \(detectedObject) damaged?"
-
+                            
                             LlamaResponseHandler.getResponse(for: question, imageURL: imageURL.absoluteString) { response in
                                 DispatchQueue.main.async {
                                     analysisResults.append("Frame at \(index + 1)s: \(response)")
                                     if index == frames.count - 1 {
                                         isAnalyzing = false
                                     }
-                                    dispatchGroup.leave()
                                 }
                             }
                         } else {
                             analysisResults.append("Failed to upload frame at \(index + 1)s")
-                            dispatchGroup.leave()
                         }
                     }
                 }
             }
-
+            
             // Notify when all frames are processed
             dispatchGroup.notify(queue: .main) {
+                print("All frames processed, notifying main queue")
                 isAnalyzing = false
             }
         }
